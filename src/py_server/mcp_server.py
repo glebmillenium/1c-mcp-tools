@@ -111,25 +111,35 @@ class MCPProxy:
 				return []
 		
 		@self.server.call_tool()
-		async def handle_call_tool(name: str, arguments: Dict[str, Any]) -> List[types.TextContent]:
+		async def handle_call_tool(name: str, arguments: Dict[str, Any]) -> types.CallToolResult:
 			"""Вызвать инструмент."""
 			ctx = self.server.request_context
 			onec_client: OneCClient = ctx.lifespan_context["onec_client"]
 			
 			try:
-				logger.debug(f"Вызов инструмента: {name} с аргументами: {arguments}")
+				if name == "execute_code":
+					logger.debug("Вызов execute_code: аргументы скрыты")
+				else:
+					logger.debug(f"Вызов инструмента: {name} с аргументами: {arguments}")
 				result = await onec_client.call_tool(name, arguments)
 				
 				if result.isError:
 					logger.error(f"Ошибка выполнения инструмента {name}")
 				
-				return result.content
+				# Передаём isError дальше; возврат только content превращал отказ 1С
+				# в успешный ответ MCP SDK.
+				return result
 			except Exception as e:
-				logger.error(f"Ошибка при вызове инструмента {name}: {e}")
-				return [types.TextContent(
-					type="text",
-					text=f"Ошибка выполнения инструмента: {str(e)}"
-				)]
+				if name == "execute_code":
+					logger.error("Ошибка при вызове execute_code: %s", type(e).__name__)
+					message = ("Ответ execute_code не получен. Код мог выполниться или продолжать работу. "
+						"Не повторяйте вызов автоматически; проверьте журнал mcp.execute_code и сеанс 1С.")
+				else:
+					logger.error(f"Ошибка при вызове инструмента {name}: {e}")
+					message = f"Ошибка выполнения инструмента: {str(e)}"
+				return types.CallToolResult(
+					content=[types.TextContent(type="text", text=message)], isError=True
+				)
 		
 		@self.server.list_resources()
 		async def handle_list_resources() -> List[types.Resource]:

@@ -15,6 +15,37 @@ from .http_server import run_http_server
 from .stdio_server import run_stdio_server
 
 
+class _MCPProtocolLogFilter(logging.Filter):
+	"""Не допускает payload протокола и ValidationError SDK в журнал."""
+
+	def filter(self, record: logging.LogRecord) -> bool:
+		if record.name == "mcp" or record.name.startswith("mcp."):
+			# SDK пишет входящие данные не только на DEBUG: ошибки разбора
+			# содержат их в тексте/traceback на ERROR. Не угадываем секреты.
+			record.msg = "Событие MCP SDK; содержимое протокола скрыто."
+			record.args = ()
+			record.exc_info = None
+			record.exc_text = None
+			record.stack_info = None
+		return True
+
+
+def _protect_mcp_logging():
+	# Фильтр родительского logger не вызывается для propagated records.
+	# Защищаем сами обработчики, включая уже настроенные до basicConfig.
+	loggers = [logging.getLogger(), logging.getLogger("mcp")]
+	loggers.extend(
+		logger for name, logger in list(logging.Logger.manager.loggerDict.items())
+		if name.startswith("mcp.") and isinstance(logger, logging.Logger)
+	)
+	handlers = {handler for logger in loggers for handler in logger.handlers}
+	if logging.lastResort is not None:
+		handlers.add(logging.lastResort)
+	for handler in handlers:
+		if not any(isinstance(item, _MCPProtocolLogFilter) for item in handler.filters):
+			handler.addFilter(_MCPProtocolLogFilter())
+
+
 def setup_logging(level: str = "INFO"):
 	"""Настройка логирования.
 	
@@ -28,6 +59,9 @@ def setup_logging(level: str = "INFO"):
 			logging.StreamHandler(sys.stderr)  # Логи должны идти в stderr, не в stdout!
 		]
 	)
+	# Уровень сокращает шум; фильтр скрывает payload также в ERROR SDK.
+	logging.getLogger("mcp").setLevel(logging.INFO)
+	_protect_mcp_logging()
 
 
 def create_parser() -> argparse.ArgumentParser:
@@ -236,4 +270,4 @@ async def main():
 
 
 if __name__ == "__main__":
-	asyncio.run(main()) 
+	asyncio.run(main())

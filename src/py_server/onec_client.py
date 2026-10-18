@@ -97,6 +97,7 @@ class OneCClient:
 		Returns:
 			Результат выполнения метода
 		"""
+		sensitive_tool = method == "tools/call" and (params or {}).get("name") == "execute_code"
 		try:
 			# Проверяем и восстанавливаем клиент при необходимости
 			await self._ensure_client()
@@ -111,13 +112,19 @@ class OneCClient:
 				"params": params or {}
 			}
 			
-			logger.debug(f"JSON-RPC запрос: {rpc_request}")
+			if sensitive_tool:
+				logger.debug("JSON-RPC запрос execute_code: содержимое скрыто")
+			else:
+				logger.debug(f"JSON-RPC запрос: {rpc_request}")
 			
 			response = await self.client.post(url, json=rpc_request)
 			response.raise_for_status()
 			
 			rpc_response = response.json()
-			logger.debug(f"JSON-RPC ответ: {rpc_response}")
+			if sensitive_tool:
+				logger.debug("JSON-RPC ответ execute_code: содержимое скрыто")
+			else:
+				logger.debug(f"JSON-RPC ответ: {rpc_response}")
 			
 			# Проверяем на ошибки JSON-RPC
 			if "error" in rpc_response:
@@ -127,10 +134,16 @@ class OneCClient:
 			return rpc_response.get("result", {})
 			
 		except httpx.HTTPError as e:
-			logger.error(f"Ошибка HTTP при вызове RPC: {e}")
+			if sensitive_tool:
+				logger.error("Ошибка HTTP при execute_code: %s; выполнение могло продолжиться", type(e).__name__)
+			else:
+				logger.error(f"Ошибка HTTP при вызове RPC: {e}")
 			raise
 		except json.JSONDecodeError as e:
-			logger.error(f"Ошибка парсинга JSON ответа RPC: {e}")
+			if sensitive_tool:
+				logger.error("Некорректный JSON ответа execute_code; результат выполнения неизвестен")
+			else:
+				logger.error(f"Ошибка парсинга JSON ответа RPC: {e}")
 			raise
 	
 	async def list_tools(self) -> List[types.Tool]:
