@@ -63,7 +63,7 @@
 			</UsePurposes>
 			<ScriptVariant>Russian</ScriptVariant>
 			<Vendor/>
-			<Version>1.0.7</Version>
+			<Version>1.0.8</Version>
 			<BriefInformation/>
 			<DetailedInformation/>
 			<Copyright/>
@@ -88,6 +88,13 @@
 			<DataProcessor>mcp_ИнструментДанныеОКонфигурации</DataProcessor>
 			<DataProcessor>mcp_РесурсОписаниеСинтаксисаВстроенногоЯзыка</DataProcessor>
 			<DataProcessor>mcp_ИнструментРаботаСЗапросами</DataProcessor>
+			<Role>mcp_ЧтениеРасширений</Role>
+			<Role>mcp_УстановкаРасширений</Role>
+			<Role>mcp_НастройкаУстановкиРасширений</Role>
+			<Constant>mcp_УстановкаРасширенийРазрешена</Constant>
+			<Constant>mcp_СтендУстановкиРасширений</Constant>
+			<Constant>mcp_КаталогКопийРасширений</Constant>
+			<DataProcessor>mcp_ИнструментУстановкаРасширений</DataProcessor>
 		</ChildObjects>
 	</Configuration>
 </MetaDataObject>

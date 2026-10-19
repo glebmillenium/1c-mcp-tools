@@ -117,8 +117,8 @@ class MCPProxy:
 			onec_client: OneCClient = ctx.lifespan_context["onec_client"]
 			
 			try:
-				if name == "execute_code":
-					logger.debug("Вызов execute_code: аргументы скрыты")
+				if name in {"execute_code", "extension_inspect", "extension_validate", "extension_install"}:
+					logger.debug("Вызов %s: аргументы скрыты", name)
 				else:
 					logger.debug(f"Вызов инструмента: {name} с аргументами: {arguments}")
 				result = await onec_client.call_tool(name, arguments)
@@ -134,6 +134,10 @@ class MCPProxy:
 					logger.error("Ошибка при вызове execute_code: %s", type(e).__name__)
 					message = ("Ответ execute_code не получен. Код мог выполниться или продолжать работу. "
 						"Не повторяйте вызов автоматически; проверьте журнал mcp.execute_code и сеанс 1С.")
+				elif name in {"extension_inspect", "extension_validate", "extension_install"}:
+					logger.error("Ошибка при вызове %s: %s", name, type(e).__name__)
+					message = ("Ответ API расширений не получен. Если запрашивалась установка, результат неизвестен. "
+						"Не повторяйте установку автоматически; выполните extension_inspect и проверьте журнал mcp.extension_install.")
 				else:
 					logger.error(f"Ошибка при вызове инструмента {name}: {e}")
 					message = f"Ошибка выполнения инструмента: {str(e)}"

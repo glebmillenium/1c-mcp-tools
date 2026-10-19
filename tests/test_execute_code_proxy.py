@@ -56,6 +56,26 @@ class ExecuteCodeProxyTests(unittest.IsolatedAsyncioTestCase):
 		self.assertEqual(result.content[0].text, "query-result")
 		self.assertFalse(result.isError)
 
+	async def test_extension_payload_and_backup_path_are_hidden_from_debug(self):
+		for tool in ("extension_validate", "extension_install"):
+			with self.subTest(tool=tool):
+				self.response_result = {"content": [{"type": "text", "text": '{"backup_path":"backup-secret"}'}], "isError": False}
+				with self.assertLogs("src.py_server.onec_client", level="DEBUG") as logs:
+					result = await self.client.call_tool(tool, {"cfe_base64": "CFE_SOURCE_SECRET"})
+				self.assertIn("backup-secret", result.content[0].text)
+				self.assertNotIn("backup-secret", "\n".join(logs.output))
+				self.assertNotIn("CFE_SOURCE_SECRET", "\n".join(logs.output))
+
+	async def test_extension_install_transport_failure_has_no_retry_or_payload_leak(self):
+		self.failure = httpx.ReadTimeout("extension-transport-secret")
+		with self.assertLogs("src.py_server", level="DEBUG") as logs:
+			result = await self.dispatch(self.client, "extension_install")
+		self.assertTrue(result.isError)
+		self.assertIn("Не повторяйте", result.content[0].text)
+		self.assertEqual(len(self.requests), 1)
+		self.assertNotIn("extension-transport-secret", "\n".join(logs.output))
+		self.assertNotIn("proxy-secret", "\n".join(logs.output))
+
 	async def test_http_timeout_is_not_retried_and_does_not_log_error_payload(self):
 		self.failure = httpx.ReadTimeout("exception-secret")
 		with self.assertLogs("src.py_server.onec_client", level="DEBUG") as logs:

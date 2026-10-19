@@ -97,7 +97,10 @@ class OneCClient:
 		Returns:
 			Результат выполнения метода
 		"""
-		sensitive_tool = method == "tools/call" and (params or {}).get("name") == "execute_code"
+		tool_name = (params or {}).get("name")
+		sensitive_tool = method == "tools/call" and tool_name in {
+			"execute_code", "extension_inspect", "extension_validate", "extension_install"
+		}
 		try:
 			# Проверяем и восстанавливаем клиент при необходимости
 			await self._ensure_client()
@@ -113,7 +116,7 @@ class OneCClient:
 			}
 			
 			if sensitive_tool:
-				logger.debug("JSON-RPC запрос execute_code: содержимое скрыто")
+				logger.debug("JSON-RPC запрос %s: содержимое скрыто", tool_name)
 			else:
 				logger.debug(f"JSON-RPC запрос: {rpc_request}")
 			
@@ -122,7 +125,7 @@ class OneCClient:
 			
 			rpc_response = response.json()
 			if sensitive_tool:
-				logger.debug("JSON-RPC ответ execute_code: содержимое скрыто")
+				logger.debug("JSON-RPC ответ %s: содержимое скрыто", tool_name)
 			else:
 				logger.debug(f"JSON-RPC ответ: {rpc_response}")
 			
@@ -135,13 +138,13 @@ class OneCClient:
 			
 		except httpx.HTTPError as e:
 			if sensitive_tool:
-				logger.error("Ошибка HTTP при execute_code: %s; выполнение могло продолжиться", type(e).__name__)
+				logger.error("Ошибка HTTP при %s: %s; выполнение могло продолжиться", tool_name, type(e).__name__)
 			else:
 				logger.error(f"Ошибка HTTP при вызове RPC: {e}")
 			raise
 		except json.JSONDecodeError as e:
 			if sensitive_tool:
-				logger.error("Некорректный JSON ответа execute_code; результат выполнения неизвестен")
+				logger.error("Некорректный JSON ответа %s; результат выполнения неизвестен", tool_name)
 			else:
 				logger.error(f"Ошибка парсинга JSON ответа RPC: {e}")
 			raise
