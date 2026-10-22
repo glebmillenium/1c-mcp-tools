@@ -26,7 +26,7 @@ class OneCClient:
 		"""
 		self.base_url = base_url.rstrip('/')
 		self.service_root = service_root.strip('/')
-		self.auth = httpx.BasicAuth(username, password)
+		self.auth = httpx.BasicAuth(username, password) if username else None
 
 		# Используем метод для создания клиента
 		self.client = self._create_client()
