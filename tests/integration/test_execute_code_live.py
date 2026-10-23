@@ -55,10 +55,10 @@ class ExecuteCodeLiveTests(unittest.IsolatedAsyncioTestCase):
 	@unittest.skipUnless(STATE == "enabled", "Требуется включённый допуск")
 	async def test_limits_and_unknown_parameter(self):
 		for code, kwargs, expected in [
-			("//" + "x" * 16384, {}, "invalid_code"),
+			("//" + "x" * 1000000, {}, "invalid_code"),
 			("Результат = 1;", {"enable": True}, "invalid_arguments"),
-			("Результат = 1;", {"parameters": {"text": "x" * 16385}}, "invalid_parameters"),
-			('Результат = "x"; Для Индекс = 1 По 16 Цикл Результат = Результат + Результат; КонецЦикла;', {}, "result_too_large"),
+			("Результат = 1;", {"parameters": {"text": "x" * 1000001}}, "invalid_parameters"),
+			('Результат = "x"; Для Индекс = 1 По 20 Цикл Результат = Результат + Результат; КонецЦикла;', {}, "result_too_large"),
 		]:
 			with self.subTest(expected=expected):
 				result, payload = await self.call(code, **kwargs)
