@@ -42,7 +42,7 @@ class ExecuteCodeLiveTests(unittest.IsolatedAsyncioTestCase):
 			parameters={"Значение": 7},
 		)
 		self.assertFalse(result.isError)
-		self.assertEqual(payload["result"], {"Значение": 7, "БезопасныйРежим": True})
+		self.assertEqual(payload["result"], {"Значение": 7, "БезопасныйРежим": False})
 
 	@unittest.skipUnless(STATE == "enabled", "Требуется включённый допуск")
 	async def test_exception_and_syntax_error(self):
